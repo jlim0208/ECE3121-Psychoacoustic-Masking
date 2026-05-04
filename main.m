@@ -1,0 +1,27 @@
+clc; close all; clear all;
+[y, fs] = audioread('02Tchaikovsky_CapriccioItalienOp.45.mp3');
+seg1 = y(1:floor(length(y)/3));
+seg2 = y(floor(length(y)/3)+1: floor(2*length(y)/3));
+seg3 = y(floor(2*length(y)/3)+1 : end);
+%Quantization of low power elements
+
+%Fourier Transform
+fft1 = fft(seg1);
+fft2 = fft(seg2);
+fft3 = fft(seg3);
+N1= length(seg1);
+
+omega1 = (-floor(N1/2):(N1-1-floor(N1/2)))*(fs/N1);
+figure(1); plot(omega1, fftshift(abs(fft1)));
+title("FFT Magnitude (Segment 1)")
+xlabel("Frequency (Hz)")
+ylabel("|FFT|")
+
+fft1_quant = fft1;
+threshold = 0.05 * max(abs(fft1));
+low_index = abs(fft1) < threshold;
+fft1_quant(low_index) = round(fft1(low_index) / 100) * 100;
+
+figure(2); plot(omega1, fftshift(abs(fft1_quant)));
+seg1_out = ifft(fft1_quant);
+sound(seg1_out, fs);
