@@ -17,6 +17,7 @@ title("FFT Magnitude (Segment 1)")
 xlabel("Frequency (Hz)")
 ylabel("|FFT|")
 
+%Quantization of low power elements
 fft1_quant = fft1;
 threshold = 0.05 * max(abs(fft1));
 low_index = abs(fft1) < threshold;
