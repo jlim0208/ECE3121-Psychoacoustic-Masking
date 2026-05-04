@@ -1,5 +1,5 @@
 clc; close all; clear all;
-[y, fs] = audioread('02Tchaikovsky_CapriccioItalienOp.45.mp3');
+[y, fs] = audioread('02Tchaikovsky_CapriccioItalienOp.45_cut.mp3');
 seg1 = y(1:floor(length(y)/3));
 seg2 = y(floor(length(y)/3)+1: floor(2*length(y)/3));
 seg3 = y(floor(2*length(y)/3)+1 : end);
