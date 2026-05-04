@@ -1,9 +1,15 @@
 clc; close all; clear all;
 [y, fs] = audioread('02Tchaikovsky_CapriccioItalienOp.45_cut.mp3');
-seg1 = y(1:floor(length(y)/3));
-seg2 = y(floor(length(y)/3)+1: floor(2*length(y)/3));
-seg3 = y(floor(2*length(y)/3)+1 : end);
-%Quantization of low power elements
+
+%% Segment audio
+cut12 = 18;
+cut23 = 50;
+seg1 = y(1:cut12*fs);
+seg2 = y(cut12*fs+1:cut23*fs);
+seg3 = y(cut23*fs+1:end);
+sound(seg3,fs)
+
+%% Quantization of low power elements
 
 %Fourier Transform
 fft1 = fft(seg1);
