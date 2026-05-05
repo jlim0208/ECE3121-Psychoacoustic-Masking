@@ -125,51 +125,81 @@ temp1 = fft1Quant;
 
 %% Dynamic Thresholds
 % Base thresholds around peaks
-
-% Identify peaks in the original FFT (only in positive frequencies, just
-% replicate it for negative frequencies later)
-fft1Mid = floor(length(fft1)/2);
-fft1Half = fft1(1:fft1Mid+1);
-fft1dBHalf = 20*log10(abs(fft1Half)+1e-12);
-[peaks, locs] = findpeaks(fft1dBHalf, 'MinPeakHeight', 10);
-
-% Define rate of decay of masking constants
-upwardsDecay = 0.5; % Masking decays slower upwards
-downwardsDecay = 2;
-
-% Calculate dynamic thresholds based on peak and their locations
-dynThresholds = -inf(size(fft1dBHalf));
-for i = 1:length(locs)
-    baseloc = locs(i);
+function [fftFull, dynThresholds] = dynMasking(fftSig, maskedMult)
+    % Identify peaks in the original FFT (only in positive frequencies, 
+    % just replicate it for negative frequencies later)
+    fftMid = floor(length(fftSig)/2);
+    fftHalf = fftSig(1:fftMid+1);
+    fftdBHalf = 20*log10(abs(fftHalf)/max(abs(fftHalf))+1e-12);
+    [peaks, locs] = findpeaks(fftdBHalf, "MinPeakProminence",10);
     
-    for bin = 1:fft1Mid+1
-        displacement = bin - baseloc;
-
-        % Calculate decay based on distance. Higher distance = less masking
-        if (displacement > 0)
-            decay = displacement * upwardsDecay;
-        else 
-            decay = -displacement * downwardsDecay;
-        end
+    % Define rate of decay of masking constants
+    upwardsDecay = 0.5; % Masking decays slower upwards
+    downwardsDecay = 2;
+    
+    % Calculate dynamic thresholds based on peak and their locations
+    dynThresholds = -inf(size(fftdBHalf));
+    for i = 1:length(locs)
+        baseloc = locs(i);
         
-        % Use the least overall decay/highest threshold (i.e. apply the
-        % most masking)
-        dynThresholds(bin) = max(dynThresholds(bin), peaks(i) - decay);
+        for bin = 1:fftMid+1
+            displacement = bin - baseloc;
+    
+            % Calculate decay based on distance. Higher distance = less 
+            % masking
+            if (displacement > 0)
+                decay = displacement * upwardsDecay;
+            else 
+                decay = -displacement * downwardsDecay;
+            end
+            
+            % Use the least overall decay/highest threshold (i.e. apply the
+            % most masking)
+            dynThresholds(bin) = max(dynThresholds(bin), peaks(i) - decay);
+        end
     end
+    
+    %% Apply dynamic thresholds to the FFT
+    % Still simply cut off the frequency, but at least it is according to 
+    % nearby frequencies
+    % fft1dBHalf(fft1dBHalf < dynThresholds) = -Inf;
+    fftHalf(fftdBHalf < dynThresholds) = fftHalf(fftdBHalf < dynThresholds).*abs(maskedMult);
+    
+    % Flip and add in the negative frequencies
+    % fft1dBFull = [fft1dBHalf, flip(fft1dBHalf(2:end-1))];
+    fftFull = [fftHalf, conj(flip(fftHalf(2:end-1)))];
 end
 
-%% Apply dynamic thresholds to the FFT. Still simply cut off the frequency,
-% but at least it is according to nearby frequencies
-fft1dBHalf(fft1dBHalf < dynThresholds) = -Inf;
-fft1Half(fft1dBHalf < dynThresholds) = 0;
+%% Smaller windows
+% Split signal into smaller overlapping blocks and apply the thresholds 
+% for each block
+winSize = 2048; % Size of block
+overlap = 0.5; % Amount of overlap
+winStep = winSize * overlap; % Distance between block centers
+hWindow = transpose(hann(winSize, "periodic")); % hann window
+winSums = zeros(size(seg1)); % sum of hann windows to normalise
+seg1Out = zeros(size(seg1)); % output
+maskedMod  = 0.5; % value to reduce masked frequencies (multiply)
 
-% Flip and add in the negative frequencies
-fft1dBFull = [fft1dBHalf, flip(fft1dBHalf(2:end-1))];
-fft1Full = [fft1Half, conj(flip(fft1Half(2:end-1)))];
+for step = 1:winStep:(length(fft1) - winSize + 1)
+    block = seg1(step:(step + winSize - 1)) .* hWindow;
 
-seg1Out = ifft(fft1Full);
-sound(seg1Out(1:7*fs), fs);
+    % Process the next block of the signal
+    fftBlock = fft(block);
 
+    % Apply dynamic masking to the FFT of the current block
+    [fftBlock, ~] = dynMasking(fftBlock, maskedMod);
+
+    % Add filtered data together
+    seg1Out(step:(step + winSize - 1)) = seg1Out(step:(step + winSize - 1)) + ifft(fftBlock) .* hWindow;
+
+    % Gather normaliser values
+    winSums(step:(step + winSize - 1)) = winSums(step:(step + winSize - 1)) + hWindow .^2;
+end
+
+seg1Out = seg1Out ./ (winSums + 1e-12);
+% seg1Out = ifft(fft1Full);
+sound(seg1Out(1:10*fs), fs);
 %%
 figure(9);
 % plot(omega1khz, fftshiftNormdB(10.^(fft1dBFull./20)));
@@ -177,11 +207,8 @@ figure(9);
 % 
 % seg1Out = ifft(10.^(fft1dBFull./20));
 % sound(seg1Out(1:7*fs), fs);
-
-plot(omega1khz, fftshiftNormdB(fft1Full));
+plot(omega1khz, fftshiftNormdB(fft(seg1Out)));
 title("dynamic threshold");
 
-seg1Out = ifft(fft1Full);
-sound(seg1Out(1:7*fs), fs);
-
-all(fftshiftNormdB(10.^(fft1dBFull./20))==fftshiftNormdB(fft1Full))
+% seg1Out = ifft(fft1Full);
+% sound(seg1Out(1:7*fs), fs);
