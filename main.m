@@ -140,10 +140,10 @@ function [fftFull, dynThresholds] = dynMasking(fftSig, maskedMult)
     % Calculate dynamic thresholds based on peak and their locations
     dynThresholds = -inf(size(fftdBHalf));
     for i = 1:length(locs)
-        baseloc = locs(i);
+        baseLoc = locs(i);
         
         for bin = 1:fftMid+1
-            displacement = bin - baseloc;
+            displacement = bin - baseLoc;
     
             % Calculate decay based on distance. Higher distance = less 
             % masking
@@ -175,31 +175,36 @@ end
 % for each block
 winSize = 2048; % Size of block
 overlap = 0.5; % Amount of overlap
-winStep = winSize * overlap; % Distance between block centers
-hWindow = transpose(hann(winSize, "periodic")); % hann window
-winSums = zeros(size(seg1)); % sum of hann windows to normalise
-seg1Out = zeros(size(seg1)); % output
 maskedMod  = 0.5; % value to reduce masked frequencies (multiply)
 
-for step = 1:winStep:(length(fft1) - winSize + 1)
-    block = seg1(step:(step + winSize - 1)) .* hWindow;
-
-    % Process the next block of the signal
-    fftBlock = fft(block);
-
-    % Apply dynamic masking to the FFT of the current block
-    [fftBlock, ~] = dynMasking(fftBlock, maskedMod);
-
-    % Add filtered data together
-    seg1Out(step:(step + winSize - 1)) = seg1Out(step:(step + winSize - 1)) + ifft(fftBlock) .* hWindow;
-
-    % Gather normaliser values
-    winSums(step:(step + winSize - 1)) = winSums(step:(step + winSize - 1)) + hWindow .^2;
+function [sigOut] = windowSignal(signal, fftLength, winSize, overlap, maskedMod)
+    winStep = winSize * overlap; % Distance between block centers
+    hWindow = transpose(hann(winSize, "periodic")); % hann window
+    winSums = zeros(size(signal)); % sum of hann windows to normalise
+    sigOut = zeros(size(signal)); % output
+    
+    for step = 1:winStep:(fftLength - winSize + 1)
+        block = signal(step:(step + winSize - 1)) .* hWindow;
+    
+        % Process the next block of the signal
+        fftBlock = fft(block);
+    
+        % Apply dynamic masking to the FFT of the current block
+        [fftBlock, ~] = dynMasking(fftBlock, maskedMod);
+    
+        % Add filtered data together
+        sigOut(step:(step + winSize - 1)) = sigOut(step:(step + winSize - 1)) + ifft(fftBlock) .* hWindow;
+    
+        % Gather normaliser values
+        winSums(step:(step + winSize - 1)) = winSums(step:(step + winSize - 1)) + hWindow .^2;
+    end
+    
+    sigOut = sigOut ./ (winSums + 1e-12);
 end
 
-seg1Out = seg1Out ./ (winSums + 1e-12);
-% seg1Out = ifft(fft1Full);
+seg1Out = windowSignal(seg1, length(fft1), winSize, overlap, maskedMod);
 sound(seg1Out(1:10*fs), fs);
+
 %%
 figure(9);
 % plot(omega1khz, fftshiftNormdB(10.^(fft1dBFull./20)));
