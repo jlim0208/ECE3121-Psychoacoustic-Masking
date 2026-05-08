@@ -35,9 +35,6 @@ if ~isscalar(maskedMult) || ~isnumeric(maskedMult)
     error('maskedMult must be a numeric scalar.');
 end
 
-% Ensure column vector for consistent indexing; will restore shape at end
-wasRow = isrow(fftSig);
-fftSig = fftSig(:);
 % Base thresholds around peaks which effect decays as you get further away
 % from them
     % Identify peaks in the original FFT (only in positive frequencies, 
