@@ -19,8 +19,12 @@ fft1 = fft(seg1);
 fft2 = fft(seg2);
 fft3 = fft(seg3);
 N1 = length(seg1);
+N2 = length(seg2);
+N3 = length(seg3);
 
 omega1khz = (-floor(N1/2):(N1-1-floor(N1/2)))*(fs/N1)/1000;
+omega2khz = (-floor(N2/2):(N2-1-floor(N2/2)))*(fs/N2)/1000;
+omega3khz = (-floor(N3/2):(N3-1-floor(N3/2)))*(fs/N3)/1000;
 
 figure(1); plot(omega1khz, fftshift_norm_db(fft1));
 title("FFT of Signal")
@@ -71,7 +75,7 @@ fftQuant5(lowIndex5) = 0;
 seg1Out5 = ifft(fftQuant5);
 error5 = (seg1Out5 - seg1);
 ssError5 = sum(error5(160:end-160) .^ 2);
-fprintf("Static sum squared error: %f\n", ssError5);
+fprintf("Static sum squared error (sig1): %f\n", ssError5);
 % sound(seg1Out(1:7*fs), fs);
 % pause();
 figure(5);
@@ -109,7 +113,8 @@ winSize = 2048; % Size of block
 overlap = 0.5; % Amount of overlap
 maskedMod  = 0.5; % value to reduce masked frequencies (multiply)
 
-[seg1OutDyn, ~] = window_signal(seg1, fft1, winSize, overlap, maskedMod, @dynamic_masking);
+[fft1OutDyn, ~] = window_signal(seg1, fft1, winSize, overlap, maskedMod, @dynamic_masking);
+seg1OutDyn = ifft(fft1OutDyn);
 sound(seg1OutDyn(1:10*fs), fs);
 
 figure(9);
@@ -118,10 +123,10 @@ title(sprintf("Filtered Frequency Domain \n(low-power components near peaks are 
 xlabel("Frequency (kHz)")
 ylabel("Magnitude (dB)")
 
-% Plot SSError
+% Find SSError
 errorDyn = (seg1OutDyn - seg1);
 ssErrorDyn = mean(errorDyn(160:end-160) .^ 2);
-fprintf("Dynamic sum squared error: %f\n", ssErrorDyn);
+fprintf("Dynamic sum squared error (sig1): %f\n", ssErrorDyn);
 
 %% Plot a snippet of the filtered signal in time domain
 figure(10);
@@ -144,13 +149,38 @@ maskedMods = 0:0.1:1;
 
 figure(11);
 plot(maskedMods, 20*log10(abs(errorsMM)))
-title("Normalised Error by Masking Modifier")
+title("Error by Masking Modifier")
 xlabel("Modifier Value")
-ylabel("Normalised Error (dB)")
+ylabel("Sum of Squared Error (dB)")
+
+%% Test multiple decays for dynamic thresholds
+% Test how error changes against an increasing masking range
+decaysList = num2cell(2:2:40);
+for i = 1:length(decaysList)
+    decaysList(i) = {[4 1] ./ decaysList{i}};
+end
+[errorsMD1, ~] = test_thresholds(fft1, decaysList, seg1, @(fftSig, decays) window_signal(seg1, fftSig, winSize, overlap, maskedMod, @(x,y) dynamic_masking(x,y,decays)));
+[errorsMD2, ~] = test_thresholds(fft2, decaysList, seg2, @(fftSig, decays) window_signal(seg2, fftSig, winSize, overlap, maskedMod, @(x,y) dynamic_masking(x,y,decays)));
+[errorsMD3, ~] = test_thresholds(fft3, decaysList, seg3, @(fftSig, decays) window_signal(seg3, fftSig, winSize, overlap, maskedMod, @(x,y) dynamic_masking(x,y,decays)));
+
+%% Plot error against decays
+clf(12);
+figure(12);
+yyaxis right
+plot(2:2:40, 20*log10(abs(errorsMD1)),'DisplayName', 'Single Brass')
+yyaxis left
+plot(2:2:40, 20*log10(abs(errorsMD2)),'DisplayName', 'Multiple Brass')
+hold on
+plot(2:2:40, 20*log10(abs(errorsMD3)),'DisplayName', 'Strings and Some Brass')
+title("Error against Masking Range of different instruments")
+xlabel("Forward Masking Range (bin/dB)")
+ylabel("Sum of Squared Error (dB)")
+legend('Location','southeast')
+hold off
 
 %% Combine plots for comparison
 % Combine frequency plots for comparison
-figure(12);
+figure(13);
 plot(omega1khz, fftshift_norm_db(fft1LPF), 'DisplayName', 'LPF (20kHz)');
 hold on;
 plot(omega1khz, fftshift_norm_db(fftQuant1), 'DisplayName', 'Quantised powers below 0.001%');
@@ -161,3 +191,39 @@ title('Comparison of Frequency Domains with Different Filtering');
 xlabel('Frequency (kHz)');
 ylabel('Magnitude (dB)');
 hold off;
+
+%% Test other signals
+winSize = 2048; % Size of block
+overlap = 0.5; % Amount of overlap
+maskedMod  = 0.5; % value to reduce masked frequencies (multiply)
+
+[fft2OutDyn, ~] = window_signal(seg2, fft2, winSize, overlap, maskedMod, @dynamic_masking);
+seg2OutDyn = ifft(fft2OutDyn);
+sound(seg2OutDyn(1:10*fs), fs);
+
+figure(14);
+plot(omega2khz, fftshift_norm_db(fft(seg2OutDyn)));
+title(sprintf("Filtered Frequency Domain of multiple brass instruments \n(low-power components near peaks are halved)"));
+xlabel("Frequency (kHz)")
+ylabel("Magnitude (dB)")
+
+% Find SSError
+errorDyn2 = (seg2OutDyn - seg2);
+ssErrorDyn2 = mean(errorDyn2(160:end-160) .^ 2);
+fprintf("Dynamic sum squared error (sig2): %f\n", ssErrorDyn2);
+
+%%
+[fft3OutDyn, ~] = window_signal(seg3, fft3, winSize, overlap, maskedMod, @dynamic_masking);
+seg3OutDyn = ifft(fft3OutDyn);
+sound(seg3OutDyn(1:10*fs), fs);
+
+figure(15);
+plot(omega3khz, fftshift_norm_db(fft(seg3OutDyn)));
+title(sprintf("Filtered Frequency Domain of string and some brass instruments\n(low-power components near peaks are halved)"));
+xlabel("Frequency (kHz)")
+ylabel("Magnitude (dB)")
+
+% Find SSError
+errorDyn3 = (seg3OutDyn - seg3);
+ssErrorDyn3 = mean(errorDyn3(160:end-160) .^ 2);
+fprintf("Dynamic sum squared error (sig3): %f\n", ssErrorDyn3);

@@ -1,8 +1,13 @@
-function [fftOutFull, lowIndex] = dynamic_masking(fftSig, maskedMult)
+function [fftOutFull, lowIndex] = dynamic_masking(fftSig, maskedMult, decays)
 % DYNAMIC_MASKING Apply masking around peaks
 % Inputs:
 %   fftSig     - Precomputed FFT of the full signal (vector)
 %   maskedMult - Scalar multiplier applied to masked bins (typically <1)
+%   decays     - Two-element vector specifying asymmetric decay rates (in 
+%                dB/bin) for masking thresholds away from each detected 
+%                peak. Follow format of: decay for frequencies below, then 
+%                above. Larger values produce faster reduction of the 
+%                masking threshold with distance. Defaults to [2, 0.5].
 %
 % Outputs:
 %   fftOutFull - FFT after applying dynamic masking (same size as fftSig)
@@ -34,6 +39,12 @@ end
 if ~isscalar(maskedMult) || ~isnumeric(maskedMult)
     error('maskedMult must be a numeric scalar.');
 end
+if nargin < 3 || isempty(decays)
+    decays = [2, 0.5];
+end
+if iscell(decays)
+    decays = cell2mat(decays);
+end
 
 % Base thresholds around peaks which effect decays as you get further away
 % from them
@@ -45,8 +56,8 @@ end
     [peaks, locs] = findpeaks(fftdBHalf, "MinPeakProminence",10);
     
     % Define rate of decay of masking constants
-    upwardsDecay = 0.5; % Masking decays slower upwards
-    downwardsDecay = 2;
+    upwardsDecay = decays(2); % Masking decays slower upwards
+    downwardsDecay = decays(1);
     
     % Calculate dynamic thresholds based on peak and their locations
     dynThresholds = -inf(size(fftdBHalf));

@@ -1,4 +1,4 @@
-function [sigOut, lowIndex] = window_signal(signal, fftSig, winSize, overlap, maskedMod, masking_func)
+function [fftOut, lowIndex] = window_signal(signal, fftSig, winSize, overlap, maskedMod, masking_func)
 % WINDOW_SIGNAL Apply masking by windowing
 %
 % Inputs:
@@ -17,8 +17,8 @@ function [sigOut, lowIndex] = window_signal(signal, fftSig, winSize, overlap, ma
 %                  which frequency bins were quantised.
 %
 % Outputs:
-%   sigOut   - Reconstructed time-domain signal after block-wise masking
-%              and overlap-add (same size as input signal).
+%   fftOut   - Reconstructed frequency-domain signal after block-wise 
+%              masking and overlap-add (same size as input signal).
 %   lowIndex - Row vector containing, for each processed block, the count
 %              of quantised/low-resolution bins returned by masking_func.
 %
@@ -70,4 +70,5 @@ function [sigOut, lowIndex] = window_signal(signal, fftSig, winSize, overlap, ma
     end
     
     sigOut = sigOut ./ (winSums + 1e-12);
+    fftOut = fft(sigOut);
 end
