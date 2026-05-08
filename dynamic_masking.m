@@ -1,7 +1,7 @@
 %% Dynamic Thresholds
 % Base thresholds around peaks which effect decays as you get further away
 % from them
-function [fftOutFull, dynThresholds] = dynamic_masking(fftSig, maskedMult)
+function [fftOutFull, lowIndex] = dynamic_masking(fftSig, maskedMult)
     % Identify peaks in the original FFT (only in positive frequencies, 
     % just replicate it for negative frequencies later)
     fftMid = floor(length(fftSig)/2);
@@ -38,10 +38,10 @@ function [fftOutFull, dynThresholds] = dynamic_masking(fftSig, maskedMult)
     %% Apply dynamic thresholds to the FFT
     % Still simply cut off the frequency, but at least it is according to 
     % nearby frequencies
-    % fft1dBHalf(fft1dBHalf < dynThresholds) = -Inf;
-    fftHalf(fftdBHalf < dynThresholds) = fftHalf(fftdBHalf < dynThresholds).*abs(maskedMult);
+    lowIndexHalf = fftdBHalf < dynThresholds;
+    fftHalf(lowIndexHalf) = fftHalf(lowIndexHalf).*abs(maskedMult);
     
     % Flip and add in the negative frequencies
-    % fft1dBFull = [fft1dBHalf, flip(fft1dBHalf(2:end-1))];
     fftOutFull = [fftHalf, conj(flip(fftHalf(2:end-1)))];
+    lowIndex = [lowIndexHalf, flip(lowIndexHalf(2:end-1))];
 end

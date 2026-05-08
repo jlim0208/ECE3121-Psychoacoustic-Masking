@@ -61,11 +61,11 @@ ylabel("Absolute Error")
 
 %% Static thresholds
 thresholds = [0.000001:0.000001:0.00005-0.000001,0.00005:0.00001:0.001];
-[errors, coeffDiff, numCoeffDel] = test_static_thresholds(fft1, thresholds, seg1);
+[errors, coeffDiff, numCoeffDel] = test_thresholds(fft1, thresholds * max(abs(fft1)), seg1, @static_masking);
 figure(5);
-plot(thresholds*max(abs(fft1)), 20*log10(abs(errors)))
+plot(thresholds*100, 20*log10(abs(errors)))
 title("Normalised Error by Threshold Level")
-xlabel("Lowest magnitude kept")
+xlabel("Thresholds (% of max magnitude of power)")
 ylabel("Normalised Error (dB)")
 
 figure(6);
@@ -82,13 +82,14 @@ ylabel("No. of new coeff deleted")
 
 %% test a threshold
 fft1Quant = fft1;
-threshold = 0.0001 * max(abs(fft1));
+threshold = 0.00062 * max(abs(fft1));
 lowIndex62 = abs(fft1) < threshold;
 fft1Quant(lowIndex62) = 0;
 seg1Out = ifft(fft1Quant);
 error62 = (seg1Out - seg1);
-ssError = mean(abs(error62(160:end-160)))
-sound(seg1Out(1:7*fs), fs);
+ssError = sum(error62(160:end-160) .^ 2);
+fprintf("Static sum squared error: %f\n", ssError);
+% sound(seg1Out(1:7*fs), fs);
 % pause();
 figure(8);
 plot(omega1khz, fftshift_norm_db(fft1Quant));
@@ -103,9 +104,24 @@ winSize = 2048; % Size of block
 overlap = 0.5; % Amount of overlap
 maskedMod  = 0.5; % value to reduce masked frequencies (multiply)
 
-seg1Out = window_signal(seg1, length(fft1), winSize, overlap, maskedMod);
+[seg1Out, lowIndex] = window_signal(seg1, fft1, winSize, overlap, maskedMod, @dynamic_masking);
 sound(seg1Out(1:10*fs), fs);
 
 figure(9);
 plot(omega1khz, fftshift_norm_db(fft(seg1Out)));
 title("dynamic threshold");
+
+figure(10);
+error = (seg1Out - seg1);
+ssError = mean(error(160:end-160) .^ 2);
+fprintf("Dynamic sum squared error: %f\n", ssError);
+
+%% Test multiple masked modifiers for dynamic thresholds
+maskedMods = 0:0.1:1;
+[errorsMM, ~] = test_thresholds(fft1, maskedMods, seg1, @(fftSig, maskedMult) window_signal(seg1, fftSig, winSize, overlap, maskedMult, @dynamic_masking));
+
+figure(11);
+plot(maskedMods, 20*log10(abs(errorsMM)))
+title("Normalised Error by Masking Modifier")
+xlabel("Modifier Value")
+ylabel("Normalised Error (dB)")

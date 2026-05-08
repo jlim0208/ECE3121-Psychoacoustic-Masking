@@ -1,6 +1,6 @@
 %% Test multiple thresholds
 % Test different threshold levels using static_masking
-function [errors, coeffDiff, numCoeffDel] = test_static_thresholds(fft, thresholds, ogSignal, )
+function [errors, coeffDiff, numCoeffDel] = test_thresholds(fft, thresholds, ogSignal, masking_func)
     % Preallocate
     prev = zeros(size(fft)); % Save previous coefficients deleted to 
                              % calculate difference
@@ -10,7 +10,7 @@ function [errors, coeffDiff, numCoeffDel] = test_static_thresholds(fft, threshol
     
     % Main testing loop
     for i = 1:length(thresholds)
-        [fftQuant, lowIndex] = static_masking(fft, thresholds(i) * max(abs(fft)));
+        [fftQuant, lowIndex] = masking_func(fft, thresholds(i));
     
         % ifft & error calculations
         sigOut = ifft(fftQuant);
@@ -19,7 +19,7 @@ function [errors, coeffDiff, numCoeffDel] = test_static_thresholds(fft, threshol
                                               % as there are edge artefacts
         errors(i) = ssError;
     
-        coeffDiff(i) = sum(lowIndex-prev);
+        coeffDiff(i) = sum(lowIndex)-sum(prev);
         prev = lowIndex; 
         numCoeffDel(i) = sum(lowIndex);
     end
