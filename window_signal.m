@@ -1,7 +1,44 @@
-%% Smaller windows
-% Split signal into smaller overlapping blocks and apply masking for each 
-% block separately, then combine them using hann windows
 function [sigOut, lowIndex] = window_signal(signal, fftSig, winSize, overlap, maskedMod, masking_func)
+% WINDOW_SIGNAL Apply masking by windowing
+%
+% Inputs:
+%   signal       - Time-domain signal vector to be processed (column or row).
+%   fftSig       - Precomputed FFT of the full signal (vector). Its length
+%                  determines processing range.
+%   winSize      - Size (in samples) of each window/block (positive integer).
+%   overlap      - Fractional overlap between windows expressed as a scalar
+%                  step multiplier (0 < overlap <= 1). winStep is computed
+%                  as winSize * overlap (should produce integer step).
+%   maskedMod    - Additional parameter passed to masking_func (e.g. mask
+%                  threshold or mode).
+%   masking_func - Function handle: [fftFiltered, lowIndex] = masking_func(fft, maskedMod)
+%                  that applies masking to a block FFT and returns the
+%                  masked FFT and a logical or numeric vector indicating
+%                  which frequency bins were quantised.
+%
+% Outputs:
+%   sigOut   - Reconstructed time-domain signal after block-wise masking
+%              and overlap-add (same size as input signal).
+%   lowIndex - Row vector containing, for each processed block, the count
+%              of quantised/low-resolution bins returned by masking_func.
+%
+% Behavior:
+%   Split signal into smaller overlapping blocks and apply masking for each 
+%   block separately, then combine them using hann windows.
+%
+% Notes:
+%   - The function uses a periodic Hann window for analysis/synthesis and
+%     normalises the overlap-add using the sum of squared windows.
+%   - It is assumed that winSize and winStep (winSize * overlap) are
+%     chosen so that window positions align within the length of fftSig.
+%   - The small constant added during division avoids numerical issues.
+%
+% Example:
+%   X = fft(x);
+%   winSize = 2048;
+%   overlap = 0.5;
+%   maskedMod  = 0.5;
+%   [sigOut, lowIndex] = window_signal(x, X, winSize, overlap, maskedMod, @dynamic_masking)
     fftLength = length(fftSig);
     winStep = winSize * overlap; % Distance between block centers
     hWindow = transpose(hann(winSize, "periodic")); % hann window

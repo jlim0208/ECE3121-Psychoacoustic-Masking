@@ -1,7 +1,45 @@
-%% Dynamic Thresholds
+function [fftOutFull, lowIndex] = dynamic_masking(fftSig, maskedMult)
+% DYNAMIC_MASKING Apply masking around peaks
+% Inputs:
+%   fftSig     - Precomputed FFT of the full signal (vector)
+%   maskedMult - Scalar multiplier applied to masked bins (typically <1)
+%
+% Outputs:
+%   fftOutFull - FFT after applying dynamic masking (same size as fftSig)
+%   lowIndex   - Logical vector indicating bins that were masked (true)
+%
+% Behavior:
+%   The function identifies prominent peaks in the positive-frequency
+%   half of the FFT, builds per-bin dynamic masking thresholds that
+%   decay away from each peak (asymmetric decay rates for upwards and
+%   downwards frequency directions), and attenuates FFT bins whose
+%   magnitudes (in dB relative to the largest bin) fall below those
+%   thresholds. Masking is applied symmetrically to the negative
+%   frequency bins by mirroring the positive-half results.
+%
+% Notes:
+%   - The input fftSig is expected to be a full FFT vector (length N).
+%   - maskedMult should be a scalar. If not provided, it defaults to 0.5.
+%
+% Validate inputs
+if nargin < 1
+    error('dynamic_masking requires at least one input: fftSig');
+end
+if nargin < 2 || isempty(maskedMult)
+    maskedMult = 0.5; % default to half attenuation of masked bins
+end
+if ~isvector(fftSig)
+    error('fftSig must be a vector.');
+end
+if ~isscalar(maskedMult) || ~isnumeric(maskedMult)
+    error('maskedMult must be a numeric scalar.');
+end
+
+% Ensure column vector for consistent indexing; will restore shape at end
+wasRow = isrow(fftSig);
+fftSig = fftSig(:);
 % Base thresholds around peaks which effect decays as you get further away
 % from them
-function [fftOutFull, lowIndex] = dynamic_masking(fftSig, maskedMult)
     % Identify peaks in the original FFT (only in positive frequencies, 
     % just replicate it for negative frequencies later)
     fftMid = floor(length(fftSig)/2);
