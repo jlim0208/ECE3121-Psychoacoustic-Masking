@@ -96,13 +96,13 @@ figure(6);
 plot(thresholds*100, 20*log10(abs(errors)))
 title("Normalised Error by Threshold Level")
 xlabel("Thresholds (% of max magnitude of power)")
-ylabel("Normalised Error (dB)")
+ylabel("Sum Squared Error (dB)")
 
 figure(7);
 plot(numCoeffDel, 20*log10(abs(errors)))
 title("Normalised Error by Number of Coefficients Deleted")
 xlabel("Number of Coefficients Deleted")
-ylabel("Normalised Error (dB)")
+ylabel("Sum Squared Error (dB)")
 
 figure(8);
 plot(thresholds*100,coeffDiff);
