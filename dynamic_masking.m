@@ -25,29 +25,30 @@ function [fftOutFull, lowIndex] = dynamic_masking(fftSig, maskedMult, decays)
 % Notes:
 %   - The input fftSig is expected to be a full FFT vector (length N).
 %   - maskedMult should be a scalar. If not provided, it defaults to 0.5.
-%
-% Validate inputs
-if nargin < 1
-    error('dynamic_masking requires at least one input: fftSig');
-end
-if nargin < 2 || isempty(maskedMult)
-    maskedMult = 0.5; % default to half attenuation of masked bins
-end
-if ~isvector(fftSig)
-    error('fftSig must be a vector.');
-end
-if ~isscalar(maskedMult) || ~isnumeric(maskedMult)
-    error('maskedMult must be a numeric scalar.');
-end
-if nargin < 3 || isempty(decays)
-    decays = [2, 0.5];
-end
-if iscell(decays)
-    decays = cell2mat(decays);
-end
+%   - Function documentation generated using copilot and modified
 
-% Base thresholds around peaks which effect decays as you get further away
-% from them
+    % Validate inputs
+    if nargin < 1
+        error('dynamic_masking requires at least one input: fftSig');
+    end
+    if nargin < 2 || isempty(maskedMult)
+        maskedMult = 0.5; % default to half attenuation of masked bins
+    end
+    if ~isvector(fftSig)
+        error('fftSig must be a vector.');
+    end
+    if ~isscalar(maskedMult) || ~isnumeric(maskedMult)
+        error('maskedMult must be a numeric scalar.');
+    end
+    if nargin < 3 || isempty(decays)
+        decays = [2, 0.5];
+    end
+    if iscell(decays)
+        decays = cell2mat(decays);
+    end
+
+    % Base thresholds around peaks which effect decays as you get further 
+    % away from them
     % Identify peaks in the original FFT (only in positive frequencies, 
     % just replicate it for negative frequencies later)
     fftMid = floor(length(fftSig)/2);

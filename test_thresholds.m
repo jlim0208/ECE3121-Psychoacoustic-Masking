@@ -20,6 +20,7 @@ function [errors, coeffDiff, numCoeffDel] = test_thresholds(fftSig, thresholds, 
 %     to avoid edge artifacts.
 %   - masking_func is expected to return consistent-sized outputs and a mask that
 %     can be summed to count removed coefficients.
+%   - Function documentation generated using copilot and modified
 
     % Preallocate
     prev = zeros(size(fftSig)); % Save previous coefficients deleted to 

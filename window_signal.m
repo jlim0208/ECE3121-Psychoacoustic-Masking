@@ -32,6 +32,7 @@ function [fftOut, lowIndex] = window_signal(signal, fftSig, winSize, overlap, ma
 %   - It is assumed that winSize and winStep (winSize * overlap) are
 %     chosen so that window positions align within the length of fftSig.
 %   - The small constant added during division avoids numerical issues.
+%   - Function documentation generated using copilot and modified
 %
 % Example:
 %   X = fft(x);
@@ -39,6 +40,7 @@ function [fftOut, lowIndex] = window_signal(signal, fftSig, winSize, overlap, ma
 %   overlap = 0.5;
 %   maskedMod  = 0.5;
 %   [sigOut, lowIndex] = window_signal(x, X, winSize, overlap, maskedMod, @dynamic_masking)
+
     fftLength = length(fftSig);
     winStep = winSize * overlap; % Distance between block centers
     hWindow = transpose(hann(winSize, "periodic")); % hann window
