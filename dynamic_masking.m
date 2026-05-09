@@ -1,13 +1,13 @@
-function [fftOutFull, lowIndex] = dynamic_masking(fftSig, maskedMult, decays)
+function [fftOutFull, lowIndex] = dynamic_masking(fftSig, maskGain, decays)
 % DYNAMIC_MASKING Apply masking around peaks
 % Inputs:
-%   fftSig     - Precomputed FFT of the full signal (vector)
-%   maskedMult - Scalar multiplier applied to masked bins (typically <1)
-%   decays     - Two-element vector specifying asymmetric decay rates (in 
-%                dB/bin) for masking thresholds away from each detected 
-%                peak. Follow format of: decay for frequencies below, then 
-%                above. Larger values produce faster reduction of the 
-%                masking threshold with distance. Defaults to [2, 0.5].
+%   fftSig   - Precomputed FFT of the full signal (vector)
+%   maskGain - Scalar multiplier applied to masked bins (typically <1)
+%   decays   - Two-element vector specifying asymmetric decay rates (in 
+%              dB/bin) for masking thresholds away from each detected 
+%              peak. Follow format of: decay for frequencies below, then 
+%              above. Larger values produce faster reduction of the 
+%              masking threshold with distance. Defaults to [2, 0.5].
 %
 % Outputs:
 %   fftOutFull - FFT after applying dynamic masking (same size as fftSig)
@@ -24,20 +24,20 @@ function [fftOutFull, lowIndex] = dynamic_masking(fftSig, maskedMult, decays)
 %
 % Notes:
 %   - The input fftSig is expected to be a full FFT vector (length N).
-%   - maskedMult should be a scalar. If not provided, it defaults to 0.5.
+%   - maskGain should be a scalar. If not provided, it defaults to 0.5.
 %   - Function documentation generated using copilot and modified
 
     % Validate inputs
     if nargin < 1
         error('dynamic_masking requires at least one input: fftSig');
     end
-    if nargin < 2 || isempty(maskedMult)
-        maskedMult = 0.5; % default to half attenuation of masked bins
+    if nargin < 2 || isempty(maskGain)
+        maskGain = 0.5; % default to half attenuation of masked bins
     end
     if ~isvector(fftSig)
         error('fftSig must be a vector.');
     end
-    if ~isscalar(maskedMult) || ~isnumeric(maskedMult)
+    if ~isscalar(maskGain) || ~isnumeric(maskGain)
         error('maskedMult must be a numeric scalar.');
     end
     if nargin < 3 || isempty(decays)
@@ -86,7 +86,7 @@ function [fftOutFull, lowIndex] = dynamic_masking(fftSig, maskedMult, decays)
     % Still simply cut off the frequency, but at least it is according to 
     % nearby frequencies
     lowIndexHalf = fftdBHalf < dynThresholds;
-    fftHalf(lowIndexHalf) = fftHalf(lowIndexHalf).*abs(maskedMult);
+    fftHalf(lowIndexHalf) = fftHalf(lowIndexHalf).*abs(maskGain);
     
     % Flip and add in the negative frequencies
     fftOutFull = [fftHalf, conj(flip(fftHalf(2:end-1)))];
