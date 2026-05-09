@@ -33,20 +33,25 @@ ylabel("Magnitude (dB)")
 
 %% Remove >20 kHz
 fft1Mid = floor(length(fft1)/2);
-LPFcutoff = 20000 * N1/fs;
+LPFcutoff = 10000 * N1/fs;
 fft1LPF = fft1;
-fft1LPF(LPFcutoff+2:fft1Mid) = 0;
-fft1LPF(fft1Mid:end-LPFcutoff) = 0;
-lpf1_out = ifft(fft1LPF);
+fft1LPF(LPFcutoff+1:fft1Mid) = 0;
+fft1LPF(fft1Mid:end-LPFcutoff+1) = 0;
+lpf1Out = ifft(fft1LPF);
 % sound(seg1(1:10*fs), fs);
 % pause();
-% sound(lpf1_out(1:10*fs), fs);
+% sound(lpf1Out(1:10*fs), fs);
 
 figure(2); 
 plot(omega1khz, fftshift_norm_db(fft1LPF)); 
-title("Frequency domain of Low Pass Filter (Wc=20kHz) of signal");
+title("Frequency domain of Low Pass Filter (Wc=10kHz) of signal");
 xlabel("Frequency (kHz)")
 ylabel("Magnitude (dB)")
+
+% Find SSError
+errorLPF = (lpf1Out - seg1);
+ssErrorLPF = mean(errorLPF(160:end-160) .^ 2);
+fprintf("LPF sum squared error (sig1): %e\n", ssErrorLPF);
 
 %% Quantisation of low power elements
 fftQuant1 = fft1;
@@ -164,7 +169,7 @@ end
 [errorsMD3, ~] = test_thresholds(fft3, decaysList, seg3, @(fftSig, decays) window_signal(seg3, fftSig, winSize, overlap, maskedMod, @(x,y) dynamic_masking(x,y,decays)));
 
 %% Plot error against decays
-clf(12);
+close(findobj('Type', 'figure', 'Number', 5));
 figure(12);
 yyaxis right
 plot(2:2:40, 20*log10(abs(errorsMD1)),'DisplayName', 'Single Brass')
@@ -181,12 +186,13 @@ hold off
 %% Combine plots for comparison
 % Combine frequency plots for comparison
 figure(13);
-plot(omega1khz, fftshift_norm_db(fft1LPF), 'DisplayName', 'LPF (20kHz)');
+hexCols = rgb2hex(orderedcolors("gem"));
+qntPlt1 = plot(omega1khz, fftshift_norm_db(fftQuant1), 'Color', hexCols(2), 'DisplayName', 'Quantised powers below 0.001%');
 hold on;
-plot(omega1khz, fftshift_norm_db(fftQuant1), 'DisplayName', 'Quantised powers below 0.001%');
-plot(omega1khz, fftshift_norm_db(fftQuant5), 'DisplayName', 'Quantised powers below 0.05%');
-plot(omega1khz, fftshift_norm_db(fft(seg1OutDyn)), 'DisplayName', 'Quantised (halved) powers near peaks');
-legend('Location','south');
+lpfPlt  = plot(omega1khz, fftshift_norm_db(fft1LPF), 'Color', hexCols(1), 'DisplayName', 'LPF (10kHz)');
+qntPlt5 = plot(omega1khz, fftshift_norm_db(fftQuant5), 'DisplayName', 'Quantised powers below 0.05%');
+dynPlt  = plot(omega1khz, fftshift_norm_db(fft(seg1OutDyn)), 'DisplayName', 'Quantised (halved) powers near peaks');
+legend([lpfPlt, qntPlt1, qntPlt5, dynPlt], 'Location','south');
 title('Comparison of Frequency Domains with Different Filtering');
 xlabel('Frequency (kHz)');
 ylabel('Magnitude (dB)');
