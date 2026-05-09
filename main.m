@@ -158,16 +158,16 @@ maskGains = 0:0.1:1;
 close(findobj('Type', 'figure', 'Number', 11));
 figure(11);
 yyaxis right
-plot(maskGains, abs(errorsMM1),'DisplayName', 'Single Brass')
+plot(1-maskGains, abs(errorsMM1),'DisplayName', 'Single Brass')
 yyaxis left
-plot(maskGains, abs(errorsMM2),'DisplayName', 'Multiple Brass')
+plot(1-maskGains, abs(errorsMM2),'DisplayName', 'Multiple Brass')
 hold on
-plot(maskGains, abs(errorsMM3),'DisplayName', 'Strings and Some Brass')
+plot(1-maskGains, abs(errorsMM3),'DisplayName', 'Strings and Some Brass')
 hold off
 title("Error by Masking Attenuation Factor")
-xlabel("Attenuation Factor of Masked Bins")
+xlabel("Attenuation Factor (dB) of Masked Bins")
 ylabel("Sum of Squared Error")
-legend('Location','southwest')
+legend('Location','northwest')
 
 %% Test multiple decays for dynamic thresholds
 % Test how error changes against an increasing masking range
@@ -183,14 +183,14 @@ end
 close(findobj('Type', 'figure', 'Number', 12));
 figure(12);
 yyaxis right
-plot(2:2:40, 20*log10(abs(errorsMD1)),'DisplayName', 'Single Brass')
+plot(2:2:40, abs(errorsMD1),'DisplayName', 'Single Brass')
 yyaxis left
-plot(2:2:40, 20*log10(abs(errorsMD2)),'DisplayName', 'Multiple Brass')
+plot(2:2:40, abs(errorsMD2),'DisplayName', 'Multiple Brass')
 hold on
-plot(2:2:40, 20*log10(abs(errorsMD3)),'DisplayName', 'Strings and Some Brass')
+plot(2:2:40, abs(errorsMD3),'DisplayName', 'Strings and Some Brass')
 title("Error against Masking Range of different instruments")
 xlabel("Forward Masking Range (bin/dB)")
-ylabel("Sum of Squared Error (dB)")
+ylabel("Sum of Squared Error")
 legend('Location','southeast')
 hold off
 
