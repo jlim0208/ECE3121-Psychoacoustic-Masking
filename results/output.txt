@@ -1,0 +1,5 @@
+LPF sum squared error (sig1): 4.663040e-07
+Static sum squared error (sig1): 2.615829e-02
+Dynamic sum squared error (sig1): 1.105825e+01
+Dynamic sum squared error (sig2): 3.399982e-04
+Dynamic sum squared error (sig3): 1.366703e-04
