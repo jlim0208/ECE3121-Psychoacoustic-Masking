@@ -198,12 +198,15 @@ hold off
 % Combine frequency plots for comparison
 figure(13);
 hexCols = rgb2hex(orderedcolors("gem"));
-qntPlt1 = plot(omega1khz, fftshift_norm_db(fftQuant1), 'Color', hexCols(2), 'DisplayName', 'Quantised powers below 0.001%');
+ogPlt = plot(omega1khz, fftshift_norm_db(fft1), ...
+    'Color', 'k', ...
+    'DisplayName', 'Unfiltered');
 hold on;
+qntPlt1 = plot(omega1khz, fftshift_norm_db(fftQuant1), 'Color', hexCols(2), 'DisplayName', 'Quantised powers below 0.001%');
 lpfPlt  = plot(omega1khz, fftshift_norm_db(fft1LPF), 'Color', hexCols(1), 'DisplayName', 'LPF (10kHz)');
 qntPlt5 = plot(omega1khz, fftshift_norm_db(fftQuant5), 'DisplayName', 'Quantised powers below 0.05%');
 dynPlt  = plot(omega1khz, fftshift_norm_db(fft(seg1OutDyn)), 'DisplayName', 'Quantised (halved) powers near peaks');
-legend([lpfPlt, qntPlt1, qntPlt5, dynPlt], 'Location','south');
+legend([ogPlt, lpfPlt, qntPlt1, qntPlt5, dynPlt], 'Location','south');
 title('Comparison of Frequency Domains with Different Filtering');
 xlabel('Frequency (kHz)');
 ylabel('Magnitude (dB)');
