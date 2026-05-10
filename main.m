@@ -189,7 +189,7 @@ plot(2:2:40, abs(errorsMD2),'DisplayName', 'Multiple Brass')
 hold on
 plot(2:2:40, abs(errorsMD3),'DisplayName', 'Strings and Some Brass')
 title("Error against Masking Range of Different Instruments")
-xlabel(sprintf("Forward Masking Range Factor \n(Factor is Multiplied to the Range where Forward Decay is 1 bin/dB)"))
+xlabel(sprintf("Forward Masking Range Factor \n(Factor is Multiplied to the Range (bins) where Forward Decay is 1 dB/bin)"))
 ylabel("Sum of Squared Error")
 legend('Location','southeast')
 hold off
