@@ -54,10 +54,7 @@ ssErrorLPF = mean(errorLPF(160:end-160) .^ 2);
 fprintf("LPF sum squared error (sig1): %e\n", ssErrorLPF);
 
 %% Quantisation of low power elements
-fftQuant1 = fft1;
-threshold = 0.00001 * max(abs(fft1));
-lowIndex = abs(fft1) < threshold;
-fftQuant1(lowIndex) = 0;
+[fftQuant1, ~] = static_masking(fft1, 0.00001);
 
 figure(3); plot(omega1khz, fftshift_norm_db(fftQuant1)); 
 title(sprintf("Filtered Frequency Domain \n(low-power components under 0.001%% of max removed)"));
@@ -73,10 +70,7 @@ xlabel("Seconds")
 ylabel("Absolute Error")
 % sound(seg1_out(1:fs*5), fs);
 
-fftQuant5 = fft1;
-threshold = 0.0005 * max(abs(fft1));
-lowIndex5 = abs(fft1) < threshold;
-fftQuant5(lowIndex5) = 0;
+[fftQuant5, ~] = static_masking(fft1, 0.0005);
 seg1Out5 = ifft(fftQuant5);
 error5 = (seg1Out5 - seg1);
 ssError5 = sum(error5(160:end-160) .^ 2);
@@ -91,24 +85,43 @@ ylabel("Magnitude (dB)")
 
 %% Static thresholds
 thresholds = [0.000001:0.000001:0.00005-0.000001,0.00005:0.00001:0.001];
-[errors, coeffDiff, numCoeffDel] = test_thresholds(fft1, thresholds * max(abs(fft1)), seg1, @static_masking);
+[errorsSig1, coeffDiffSig1, numCoeffDelSig1] = test_thresholds(fft1, thresholds * max(abs(fft1)), seg1, @static_masking);
+[errorsSig2, coeffDiffSig2, numCoeffDelSig2] = test_thresholds(fft2, thresholds * max(abs(fft2)), seg2, @static_masking);
+[errorsSig3, coeffDiffSig3, numCoeffDelSig3] = test_thresholds(fft3, thresholds * max(abs(fft3)), seg3, @static_masking);
+
+%% Plot error against thresholds
 figure(6);
-plot(thresholds*100, 20*log10(abs(errors)))
+plot(thresholds*100, 20*log10(abs(errorsSig1)),'DisplayName', 'Single Brass')
+hold on;
+plot(thresholds*100, 20*log10(abs(errorsSig2)),'DisplayName', 'Multiple Brass')
+plot(thresholds*100, 20*log10(abs(errorsSig3)),'DisplayName', 'Strings and Some Brass')
+hold off;
 title("Normalised Error by Threshold Level")
 xlabel("Thresholds (% of max magnitude of power)")
 ylabel("Normalised Error (dB)")
+legend('Location','southeast')
 
 figure(7);
-plot(numCoeffDel, 20*log10(abs(errors)))
+plot(numCoeffDelSig1, 20*log10(abs(errorsSig1)),'DisplayName', 'Single Brass')
+hold on;
+plot(numCoeffDelSig1, 20*log10(abs(errorsSig2)),'DisplayName', 'Multiple Brass')
+plot(numCoeffDelSig1, 20*log10(abs(errorsSig3)),'DisplayName', 'Strings and Some Brass')
+hold off;
 title("Normalised Error by Number of Coefficients Deleted")
 xlabel("Number of Coefficients Deleted")
 ylabel("Normalised Error (dB)")
+legend('Location','southeast')
 
 figure(8);
-plot(thresholds*100,coeffDiff);
-title("Number of new coefficients deleted at current threshold compared to previous threshold")
+plot(thresholds*100, log10(coeffDiffSig1),'DisplayName', 'Single Brass');
+hold on;
+plot(thresholds*100, log10(coeffDiffSig2),'DisplayName', 'Multiple Brass');
+plot(thresholds*100, log10(coeffDiffSig3),'DisplayName', 'Strings and Some Brass');
+hold off;
+title("Difference in Coefficients Deleted between Thresholds")
 xlabel("Thresholds (% of max magnitude of power)")
-ylabel("No. of new coeff deleted")
+ylabel("No. of new coeff deleted (log10)")
+legend('Location','southeast')
 
 %% Dynamic Thresholds and Smaller windows
 % Base thresholds around peaks 
@@ -198,14 +211,12 @@ hold off
 % Combine frequency plots for comparison
 figure(13);
 hexCols = rgb2hex(orderedcolors("gem"));
-ogPlt = plot(omega1khz, fftshift_norm_db(fft1), ...
-    'Color', 'k', ...
-    'DisplayName', 'Unfiltered');
+ogPlt = plot(omega1khz, fftshift_norm_db(fft1), 'Color', 'k', 'DisplayName', 'Unfiltered');
 hold on;
 qntPlt1 = plot(omega1khz, fftshift_norm_db(fftQuant1), 'Color', hexCols(2), 'DisplayName', 'Quantised powers below 0.001%');
 lpfPlt  = plot(omega1khz, fftshift_norm_db(fft1LPF), 'Color', hexCols(1), 'DisplayName', 'LPF (10kHz)');
-qntPlt5 = plot(omega1khz, fftshift_norm_db(fftQuant5), 'DisplayName', 'Quantised powers below 0.05%');
-dynPlt  = plot(omega1khz, fftshift_norm_db(fft(seg1OutDyn)), 'DisplayName', 'Quantised (halved) powers near peaks');
+qntPlt5 = plot(omega1khz, fftshift_norm_db(fftQuant5), 'Color', hexCols(3), 'DisplayName', 'Quantised powers below 0.05%');
+dynPlt  = plot(omega1khz, fftshift_norm_db(fft(seg1OutDyn)), 'Color', hexCols(4), 'DisplayName', 'Quantised (halved) powers near peaks');
 legend([ogPlt, lpfPlt, qntPlt1, qntPlt5, dynPlt], 'Location','south');
 title('Comparison of Frequency Domains with Different Filtering');
 xlabel('Frequency (kHz)');
