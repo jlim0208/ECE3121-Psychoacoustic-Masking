@@ -54,7 +54,7 @@ ssErrorLPF = mean(errorLPF(160:end-160) .^ 2);
 fprintf("LPF sum squared error (sig1): %e\n", ssErrorLPF);
 
 %% Quantisation of low power elements
-[fftQuant1, ~] = static_masking(fft1, 0.00001);
+[fftQuant1, ~] = static_masking(fft1, 0.00001*max(abs(fft1)));
 
 figure(3); plot(omega1khz, fftshift_norm_db(fftQuant1)); 
 title(sprintf("Filtered Frequency Domain \n(low-power components under 0.001%% of max removed)"));
@@ -70,7 +70,7 @@ xlabel("Seconds")
 ylabel("Absolute Error")
 % sound(seg1_out(1:fs*5), fs);
 
-[fftQuant5, ~] = static_masking(fft1, 0.0005);
+[fftQuant5, s1o5DelIndexes] = static_masking(fft1, 0.0005*max(abs(fft1)));
 seg1Out5 = ifft(fftQuant5);
 error5 = (seg1Out5 - seg1);
 ssError5 = sum(error5(160:end-160) .^ 2);
@@ -131,7 +131,7 @@ winSize = 2048; % Size of block
 overlap = 0.5; % Amount of overlap
 maskGain  = 0.5; % value to reduce masked frequencies (multiply)
 
-[fft1OutDyn, ~] = window_signal(seg1, fft1, winSize, overlap, maskGain, @dynamic_masking);
+[fft1OutDyn, s1DynDelIndexes] = window_signal(seg1, fft1, winSize, overlap, maskGain, @dynamic_masking);
 seg1OutDyn = ifft(fft1OutDyn);
 sound(seg1OutDyn(1:10*fs), fs);
 
@@ -281,3 +281,13 @@ fprintf(fileID, "Dynamic sum squared error (sig1): %e\n", ssErrorDyn);
 fprintf(fileID, "Dynamic sum squared error (sig2): %e\n", ssErrorDyn2);
 fprintf(fileID, "Dynamic sum squared error (sig3): %e", ssErrorDyn3);
 fclose(fileID);
+
+%% Write audio
+audiowrite("Seg1_normal.mp3",seg1,fs);
+audiowrite("Seg1_lpf.mp3",lpf1Out,fs);
+audiowrite("Seg1_static_mask.mp3",seg1Out5,fs);
+audiowrite("Seg1_dynamic_mask.mp3",seg1OutDyn,fs);
+
+%% Calculate compression ratio
+fprintf("Compression ratio of static masking: %f\n", sum(s1o5DelIndexes)/N1);
+fprintf("Compression ratio of dynamic masking: %f\n", mean(s1DynDelIndexes/winSize));
